@@ -1,121 +1,64 @@
-# Cardputer Adv WebRadio
+# Cardputer ADV WebRadio (100 stations)
 
-An advanced internet radio for **M5Stack Cardputer Adv** with SD card station list support, Wi-Fi memory, and additional audio features.
+Internet radio for the **M5Stack Cardputer ADV**, based on
+[WebRadio_WuSiU_Cardputer_Adv](https://github.com/wusiu/WebRadio_WuSiU_Cardputer_Adv) v2.0.0 by WuSiU
+(itself based on [M5Cardputer_WebRadio](https://github.com/cyberwisk/M5Cardputer_WebRadio) by cyberwisk).
 
-![Cardputer ADV WebRadio – running](images/WebRadio.jpg)
+## Changes from WuSiU v2.0.0
 
----
+Only two functional changes:
 
-## 📻 Radio Station List
+- **Up to 100 stations** in `station_list.txt` (was 20: longer lists were silently cut).
+- **Back key**: `` ` `` closes the station list (same as `L`).
 
-The list of radio stations is stored in a text file: **station_list.txt**
+Plus a PlatformIO build (see below) instead of the Arduino IDE.
 
-The file must be placed in the **root directory of the SD card**.
+## Station list
 
-### Priority and Storage Options
+Put `station_list.txt` at the root of the SD card, one station per line, name and stream URL separated by a comma:
 
-- The station list can also be **stored permanently inside the firmware code** and used without an SD card.
-- If an SD card is inserted and the file **station_list.txt** exists, the device will **load the station list from the SD card first**.
-- If the file is not found, the internal station list compiled in the firmware will be used.
+```
+FIP, http://icecast.radiofrance.fr/fip-midfi.mp3
+France Inter, http://icecast.radiofrance.fr/franceinter-midfi.mp3
+```
 
-### File format
+Without an SD card (or file), the station built into the firmware is used.
 
-Example:
+## Controls
 
-Radio 01 Name, http://radio-stream-link-01
+| Key | Action |
+|---|---|
+| `/` / `,` | Next / previous station |
+| `;` / `.` | Volume up / down |
+| `M` | Mute |
+| `L` | Station list (`;` `.` to move, `Enter` to play, `L` or `` ` `` to close) |
+| `R` | Reconnect to the stream |
+| `F` | FFT visualizer on / off |
+| `B` | Screen brightness |
 
-Radio 02 Name, http://radio-stream-link-02
+Wi-Fi: up to 5 networks are remembered. Hold `G0` while it connects to forget them.
 
+## Build
 
-- One station per line  
-- Station name and stream URL separated by a comma
+[PlatformIO](https://platformio.org/):
 
----
+```
+pio run
+```
 
-## ⌨️ Controls (Cardputer Adv Keyboard)
+Notes for this board (no PSRAM), learned the hard way:
 
-- **Left / Right Arrow** – change radio station  
-- **Up / Down Arrow** – adjust volume  
-- **R** – reset the server connection (if the radio freezes or fails to start)  
-- **M** – toggle mute on / off  
-- **F** – toggle FFT audio visualization  
-- **B** – adjust screen brightness  
-- **L** – enable / disable the station list view  
-- **ENTER** – confirm station selection when inside the station list menu  
+- **Board variant**: the project uses `board_build.variant = m5stack_cardputer`, like the "M5Cardputer" board of the
+  Arduino IDE. With the generic ESP32-S3 devkit variant, `SD.begin()` uses the wrong default SPI pins and takes
+  GPIO11, the keyboard interrupt of the Cardputer ADV: the keyboard stops working and the SD card is not read.
+- **ESP32-audioI2S 3.2.1**: newer versions (3.3 / 3.4+) allocate a ~720 KB stream buffer in PSRAM and play nothing
+  on the Cardputer ADV. 3.2.1 falls back to internal RAM.
+- Platform: [pioarduino](https://github.com/pioarduino/platform-espressif32) `54.03.21-2` (Arduino core 3.2.1),
+  the core used by the original build.
 
----
+The resulting `.pio/build/cardputer-adv/firmware.bin` can be installed with
+[M5Launcher](https://github.com/bmorcelli/Launcher) from the SD card.
 
-## 📶 Wi-Fi
+## License
 
-- The device can store **up to 5 Wi-Fi networks** in memory.
-- If memory is full when attempting to save another network, the device will display the list of saved networks so one can be selected for replacement.
-
-### Connection Priority Logic
-
-1. The device first attempts to connect to the **last used network**.
-2. If the connection fails, it scans for available networks already stored in memory.
-3. If multiple known networks are found, the device connects to the **strongest signal**.
-4. If no known networks are available, the device displays the list of currently available networks for selection.
-
-- Wi-Fi settings are automatically saved to memory.
-
-### Reset Wi-Fi settings
-
-To reset stored Wi-Fi credentials:
-
-1. Start the program  
-2. Press **BtnG0** while the device is attempting to connect to the network
-
----
-
-## 🧰 Requirements
-
-- M5Stack Cardputer Adv  
-- SD card with `station_list.txt` (optional if stations are stored in firmware)  
-- Wi-Fi connection
-
----
-
-## ⚙️ Arduino IDE Configuration
-
-Before compiling and uploading the firmware, make sure the correct board and partition scheme are selected in Arduino IDE.
-
----
-
-### 🧩 Select Board
-
-Choose the correct board for Cardputer:
-
-**M5Cardputer**
-
-![Board_selection](images/board.jpg)
-
----
-
-### 💾 Partition Scheme
-
-Set the partition scheme to:
-
-**Huge APP (3MB No OTA / 1MB SPIFFS)**
-
-This is required to fit the web radio application in flash memory.
-
-![Partition scheme](images/partition_scheme.jpg)
-
----
-
-## 👤 Author
-
-**WuSiU**
-
-## 📄 License
-
-MIT License
-
-## Credits
-
-Based on the original project:  
-https://github.com/cyberwisk/M5Cardputer_WebRadio
-
-Original author: cyberwisk
-
+MIT, see [LICENSE](LICENSE) (original copyright WuSiU).

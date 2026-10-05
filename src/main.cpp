@@ -1,9 +1,35 @@
+#include <Arduino.h>
 #include "M5Cardputer.h"
 #include "CardWifiSetup.h"
 #include <Audio.h>
 #include <SD.h>
 
-#define MAX_STATIONS 20
+// prototypes (the original .ino was converted to .cpp for PlatformIO)
+void setupFFT();
+void updateFFT();
+void toggleFFT();
+void updateBatteryDisplay(unsigned long updateInterval);
+void loadDefaultStations();
+void mergeRadioStations();
+void showStation();
+void audio_id3data(const char *info);
+void Playfile();
+void volumeUp();
+void volumeDown();
+void volumeMute();
+void showVolume();
+void stationUp();
+void stationDown();
+void redrawUI();
+void audio_showstation(const char *showstation);
+void audio_showstreamtitle(const char *info);
+void drawStreamTitle();
+void drawFooter();
+void toggleBrightness();
+void drawStationMenu();
+void openStationMenu();
+
+#define MAX_STATIONS 100
 #define MAX_NAME_LENGTH 30
 #define MAX_URL_LENGTH 100
 #define I2S_BCK 41
@@ -510,7 +536,7 @@ void loop() {
 
       }
 
-      else if (M5Cardputer.Keyboard.isKeyPressed('l')) {
+      else if (M5Cardputer.Keyboard.isKeyPressed('l') || M5Cardputer.Keyboard.isKeyPressed('`')) {
         stationMenuActive = false;
         fft_enabled = fftWasEnabled;
         fftSimON = true;
