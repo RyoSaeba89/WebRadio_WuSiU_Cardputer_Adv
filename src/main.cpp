@@ -1,5 +1,8 @@
 #include <Arduino.h>
 #include "M5Cardputer.h"
+#include <utility/Adafruit_TCA8418/Adafruit_TCA8418.h>
+#include <algorithm>
+#include <memory>
 #include "CardWifiSetup.h"
 #include <Audio.h>
 #include <SD.h>
@@ -456,6 +459,43 @@ void redrawUI() {
   }
 }
 
+// Cardputer ADV keyboard read on every loop. The M5Cardputer library reader
+// waits for the TCA8418 interrupt: if a key arrives at the wrong moment, the
+// interrupt is lost and the keyboard stops responding (the radio keeps playing).
+class PolledKeyboardReader : public KeyboardReader {
+public:
+  void begin() override {
+    _ok = _tca.begin();
+    if (_ok) {
+      _tca.matrix(7, 8);
+      _tca.flush();
+    }
+  }
+
+  void update() override {
+    if (!_ok) return;
+    for (uint8_t ev = _tca.getEvent(); ev != 0; ev = _tca.getEvent()) {
+      int code = (ev & 0x7F) - 1;
+      int r = code / 10;
+      int c = code % 10;
+      if (code < 0 || r >= 7 || c >= 8) continue;
+      Point2D_t p;  // same layout as the library
+      p.x = r * 2 + (c > 3 ? 1 : 0);
+      p.y = (c + 4) % 4;
+      auto it = std::find(_key_list.begin(), _key_list.end(), p);
+      if (ev & 0x80) {
+        if (it == _key_list.end()) _key_list.push_back(p);
+      } else if (it != _key_list.end()) {
+        _key_list.erase(it);
+      }
+    }
+  }
+
+private:
+  Adafruit_TCA8418 _tca;
+  bool _ok = false;
+};
+
 void setup() {
   auto cfg = M5.config();
   auto spk_cfg = M5Cardputer.Speaker.config();
@@ -464,6 +504,11 @@ void setup() {
     M5Cardputer.Speaker.config(spk_cfg);
   
   M5Cardputer.begin(cfg, true);
+  if (M5.getBoard() == m5::board_t::board_M5CardputerADV) {
+    // Replace the library keyboard reader (see PolledKeyboardReader)
+    detachInterrupt(digitalPinToInterrupt(11));
+    M5Cardputer.Keyboard.begin(std::unique_ptr<KeyboardReader>(new PolledKeyboardReader()));
+  }
 
   M5Cardputer.Speaker.begin();
   M5Cardputer.Speaker.setVolume(255);

@@ -6,10 +6,13 @@ Internet radio for the **M5Stack Cardputer ADV**, based on
 
 ## Changes from WuSiU v2.0.0
 
-Only two functional changes:
+Only three functional changes:
 
 - **Up to 100 stations** in `station_list.txt` (was 20: longer lists were silently cut).
 - **Back key**: `` ` `` closes the station list (same as `L`).
+- **Keyboard never freezes**: the keys are read on every loop. The M5Cardputer library waits for the
+  TCA8418 keyboard interrupt, which can get lost when a key arrives at the wrong moment: the keyboard then
+  stopped responding while the radio kept playing.
 
 Plus a PlatformIO build (see below) instead of the Arduino IDE.
 
